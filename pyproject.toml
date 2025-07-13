@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pepflex"
+version = "0.0.1"
+authors = [
+    { name = "Kyllian De Vos", email = "kdevospro@gmail.com" }
+]
+description = "A modular framework for in silico peptide screening and evolution."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = [
+    "peptide",
+    "screening",
+    "evolution",
+    "bioinformatics",
+    "chemistry",
+    "rdkit"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Development Status :: 3 - Alpha"
+]
+dependencies = [
+    "pandas>=2.2.2",
+    "numpy>=2.0.2",
+    "rdkit-pypi>=2025.03.3"
+]
+
+[project.urls]
+Homepage = "https://github.com/Kdevos12/PepFlex/"
+"Bug Tracker" = "https://github.com/Kdevos12/PepFlex/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "twine",
+    "build"
+]
+
+[tool.setuptools]
+packages = ["pepflex_lib"]
