@@ -364,126 +364,127 @@ This is an example of a ranker\_function that can be passed to the Evaluator cla
 #### **Example 4: Setting up and Running an Evolutionary Pipeline**
 
 This example demonstrates how to combine the PeptideGenerator, PeptideMutator, Evaluator, and PoolRoundProcessor to run a multi-round evolutionary simulation.  
-import pandas as pd  
-import numpy as np \# Needed for np.random.rand  
-import random  
-from datetime import datetime  
-import copy  
-import json  
-import uuid  
+
+```
+import pandas as pd
+import numpy as np  # Needed for np.random.rand
+import random
+from datetime import datetime
+import copy
+import json
+import uuid
 from typing import List, Tuple, Dict, Callable, Optional, Union
 
-\# Assuming pepflex.py is available and contains all necessary classes and functions.  
-\# In a real application, you would import directly from your pepflex module:  
-\# from pepflex import (  
-\#     AMINO\_ACID\_DF, get\_3L\_from\_smiles, get\_1L\_from\_smiles,  
-\#     Peptide, PeptidePoolManager, PeptideMutator, Evaluator, PoolRoundProcessor, PeptideGenerator,  
-\#     add\_length\_feature, add\_dummy\_score\_feature, filter\_by\_length\_in\_df,  
-\#     rank\_by\_dummy\_score\_and\_reconstruct, peptide\_crossover  
-\# )
+# In a real application, you would import directly from your pepflex module:
+# from pepflex import (
+#     AMINO_ACID_DF, get_3L_from_smiles, get_1L_from_smiles,
+#     Peptide, PeptidePoolManager, PeptideMutator, Evaluator, PoolRoundProcessor, PeptideGenerator,
+#     add_length_feature, add_dummy_score_feature, filter_by_length_in_df,
+#     rank_by_dummy_score_and_reconstruct, peptide_crossover
+# )
 
-\# 1\. Initialize Peptide Generator ( You can use your own \- this one if for reference only )  
-peptide\_gen \= PeptideGenerator()
+# 1. Initialize Peptide Generator ( You can use your own - this one is for reference only )
+peptide_gen = PeptideGenerator()
 
-\# 2\. Create an initial pool of peptides  
-initial\_smiles\_lists \= peptide\_gen.generate\_random\_peptides(num\_peptides=50, min\_length=5, max\_length=15)  
-initial\_pool\_manager \= PeptidePoolManager()  
-for i, smiles\_list in enumerate(initial\_smiles\_lists):  
-    initial\_pool\_manager.add\_peptide(Peptide(smiles\_list, peptide\_id=f"initial\_pep\_{i}"))
+# 2. Create an initial pool of peptides
+initial_smiles_lists = peptide_gen.generate_random_peptides(num_peptides=50, min_length=5, max_length=15)
+initial_pool_manager = PeptidePoolManager()
+for i, smiles_list in enumerate(initial_smiles_lists):
+    initial_pool_manager.add_peptide(Peptide(smiles_list, peptide_id=f"initial_pep_{i}"))
 
-print(f"Initial pool size: {initial\_pool\_manager.get\_pool\_size()}")
+print(f"Initial pool size: {initial_pool_manager.get_pool_size()}")
 
-\# 3\. Configure the Mutator  
-mutator \= PeptideMutator()  
-mutator.add\_mutation\_rule(mutation\_type='n\_terminal\_addition', probability=0.3)  
-mutator.add\_mutation\_rule(mutation\_type='inter\_mutation', probability=0.5)
+# 3. Configure the Mutator
+mutator = PeptideMutator()
+mutator.add_mutation_rule(mutation_type='n_terminal_addition', probability=0.3)
+mutator.add_mutation_rule(mutation_type='inter_mutation', probability=0.5)
 
-\# 4\. Configure the Evaluator  
-\# Define the evaluation pipeline steps  
-evaluation\_pipeline\_steps \= \[  
-    add\_length\_feature,  
-    add\_dummy\_score\_feature,  
-    lambda df: filter\_by\_length\_in\_df(df, min\_len=7) \# Using a lambda for parameter passing  
-\]  
-\# Define the ranker function  
-ranker \= lambda df: rank\_by\_dummy\_score\_and\_reconstruct(df, n\_to\_keep=20)
+# 4. Configure the Evaluator
+# Define the evaluation pipeline steps
+evaluation_pipeline_steps = [
+    add_length_feature,
+    add_dummy_score_feature,
+    lambda df: filter_by_length_in_df(df, min_len=7)  # Using a lambda for parameter passing
+]
+# Define the ranker function
+ranker = lambda df: rank_by_dummy_score_and_reconstruct(df, n_to_keep=20)
 
-evaluator \= Evaluator(evaluation\_pipeline=evaluation\_pipeline\_steps, ranker\_function=ranker)
+evaluator = Evaluator(evaluation_pipeline=evaluation_pipeline_steps, ranker_function=ranker)
 
-\# 5\. Set up the PoolRoundProcessor  
-round\_processor \= PoolRoundProcessor()
+# 5. Set up the PoolRoundProcessor
+round_processor = PoolRoundProcessor()
 
-\# Set the generation function for replenishment  
-round\_processor.set\_generation\_function(  
-    lambda num: \[Peptide(s, source\_generation\_params={"type": "replenishment"}) for s in peptide\_gen.generate\_random\_peptides(num, 5, 15)\]  
+# Set the generation function for replenishment
+round_processor.set_generation_function(
+    lambda num: [Peptide(s, source_generation_params={"type": "replenishment"})
+                 for s in peptide_gen.generate_random_peptides(num, 5, 15)]
 )
 
-\# Add pipeline steps to the round processor  
-\# Note: The step\_function for mutation and crossover needs to be the internal helper,  
-\# not the class instance itself, as the helper functions expect \`peptides\` as the first arg.  
-\# We pass the mutator instance and other parameters via \*\*step\_params.  
-round\_processor.add\_pipeline\_step(  
-    step\_type='mutation',  
-    step\_function=round\_processor.\_execute\_mutation\_step,  
-    name='Apply Mutations',  
-    mutator=mutator,  
-    probability\_of\_application=0.8 \# Probability that a given peptide will be mutated  
+# Add pipeline steps to the round processor
+round_processor.add_pipeline_step(
+    step_type='mutation',
+    step_function=round_processor._execute_mutation_step,
+    name='Apply Mutations',
+    mutator=mutator,
+    probability_of_application=0.8  # Probability that a given peptide will be mutated
 )
 
-round\_processor.add\_pipeline\_step(  
-    step\_type='crossover',  
-    step\_function=round\_processor.\_execute\_crossover\_step,  
-    name='Perform Crossover',  
-    num\_crossovers=10, \# Number of crossover events to attempt  
-    crossover\_probability\_per\_pair=0.7 \# Probability that a selected pair will actually crossover  
+round_processor.add_pipeline_step(
+    step_type='crossover',
+    step_function=round_processor._execute_crossover_step,
+    name='Perform Crossover',
+    num_crossovers=10,  # Number of crossover events to attempt
+    crossover_probability_per_pair=0.7  # Probability that a selected pair will actually crossover
 )
 
-round\_processor.add\_pipeline\_step(  
-    step\_type='evaluation',  
-    step\_function=round\_processor.\_execute\_evaluation\_step,  
-    name='Evaluate and Rank Peptides',  
-    evaluator\_instance=evaluator  
+round_processor.add_pipeline_step(
+    step_type='evaluation',
+    step_function=round_processor._execute_evaluation_step,
+    name='Evaluate and Rank Peptides',
+    evaluator_instance=evaluator
 )
 
-round\_processor.add\_pipeline\_step(  
-    step\_type='replenishment',  
-    step\_function=round\_processor.\_execute\_replenishment\_step,  
-    name='Replenish Pool',  
-    target\_size=50 \# Maintain a pool size of 50  
+round_processor.add_pipeline_step(
+    step_type='replenishment',
+    step_function=round_processor._execute_replenishment_step,
+    name='Replenish Pool',
+    target_size=50  # Maintain a pool size of 50
 )
 
-round\_processor.add\_pipeline\_step(  
-    step\_type='truncation',  
-    step\_function=round\_processor.\_execute\_truncation\_step,  
-    name='Truncate Pool',  
-    max\_size=50 \# Truncate to 50 after all operations  
+round_processor.add_pipeline_step(
+    step_type='truncation',
+    step_function=round_processor._execute_truncation_step,
+    name='Truncate Pool',
+    max_size=50  # Truncate to 50 after all operations
 )
 
-\# 6\. Run multiple rounds of evolution  
-current\_pool\_manager \= initial\_pool\_manager  
-all\_round\_logs\_df \= pd.DataFrame()
+# 6. Run multiple rounds of evolution
+current_pool_manager = initial_pool_manager
+all_round_logs_df = pd.DataFrame()
 
-num\_evolution\_rounds \= 3
+num_evolution_rounds = 3
 
-print("\\n--- Starting Evolutionary Simulation \---")  
-for i in range(num\_evolution\_rounds):  
-    print(f"\\n===== Running Evolution Round {i+1} \=====")  
-    new\_pool\_manager, round\_logs \= round\_processor.run\_round(current\_pool\_manager, round\_name=f"Round\_{i+1}")  
-    current\_pool\_manager \= new\_pool\_manager  
-    all\_round\_logs\_df \= pd.concat(\[all\_round\_logs\_df, round\_logs\], ignore\_index=True)  
-    print(f"End of Round {i+1}. Current pool size: {current\_pool\_manager.get\_pool\_size()}")
+print("\n--- Starting Evolutionary Simulation ---")
+for i in range(num_evolution_rounds):
+    print(f"\n===== Running Evolution Round {i+1} =====")
+    new_pool_manager, round_logs = round_processor.run_round(current_pool_manager, round_name=f"Round_{i+1}")
+    current_pool_manager = new_pool_manager
+    all_round_logs_df = pd.concat([all_round_logs_df, round_logs], ignore_index=True)
+    print(f"End of Round {i+1}. Current pool size: {current_pool_manager.get_pool_size()}")
 
-print("\\n--- Evolutionary Simulation Finished \---")
+print("\n--- Evolutionary Simulation Finished ---")
 
-\# 7\. Display final results  
-print("\\nFinal Top Peptides:")  
-final\_peptides \= current\_pool\_manager.get\_all\_peptides()  
-for peptide in final\_peptides\[:10\]: \# Display top 10 from final pool  
-    print(f"- ID: {peptide.peptide\_id\[:8\]}..., 1L: {peptide.one\_letter\_sequence}, 3L: {peptide.three\_letter\_sequence}, Length: {peptide.length}")
+# 7. Display final results
+print("\nFinal Top Peptides:")
+final_peptides = current_pool_manager.get_all_peptides()
+for peptide in final_peptides[:10]:  # Display top 10 from final pool
+    print(f"- ID: {peptide.peptide_id[:8]}..., 1L: {peptide.one_letter_sequence}, "
+          f"3L: {peptide.three_letter_sequence}, Length: {peptide.length}")
 
-print("\\nEvolutionary Round Logs:")  
-print(all\_round\_logs\_df)
+print("\nEvolutionary Round Logs:")
+print(all_round_logs_df)
 
+```
 **Explanation of the Example:**
 
 1. **Initialization:**  
@@ -515,3 +516,7 @@ print(all\_round\_logs\_df)
    * Finally, the example prints the details of the top 10 peptides from the final evolved pool and a DataFrame containing the logs from all evolutionary rounds.
 
 This example provides a hands-on illustration of how to set up and execute a basic peptide evolution simulation using PepFlex's modular components. Users can easily modify the mutation rules, evaluation criteria, and round parameters to design more complex and targeted screening pipelines.
+
+
+
+
