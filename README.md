@@ -54,7 +54,7 @@ pip install pepflex
 ```
 The following example ( **From DOCUMENTATION.md** ) demonstrates how to combine the PeptideGenerator, PeptideMutator, Evaluator, and PoolRoundProcessor to run a multi-round evolutionary simulation. .  
 
-```
+```py
 import pandas as pd
 import numpy as np  # Needed for np.random.rand
 import random
